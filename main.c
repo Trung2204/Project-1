@@ -73,7 +73,7 @@ int main()
     char path_foreground [] = "./images/foreground.jpg";
     char path_background [] = "./images/background.jpg";
     char path_weather_forecast [] = "./images/weather_forecast.jpg";
-    char save_path [] = "./images/Result.png";
+    char save_path [] = "./images/Result.jpg";
 
     // Read image data
     unsigned char * foreground = stbi_load (path_foreground, &width, &height, &channel, 0);
@@ -104,7 +104,7 @@ int main()
     unsigned char* result = image_combination(masked_image, weather_forecast, width, height, channel);
 
     // Save image
-    stbi_write_png(save_path, width, height, channel, result, width * channel);
+    stbi_write_jpg(save_path, width, height, channel, result, width * channel);
     printf("Result image saved to %s\n", save_path);
 
     stbi_image_free(foreground);
