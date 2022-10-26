@@ -9,27 +9,46 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "./headers/stb_image_write.h"
 
-unsigned char image_mask(unsigned char *foreground, int width, int height, int channel)
+/**
+ * Create a new 1-dimensional array with the given size
+ * @param[in] _size the size of the array
+ * @param[out] _ empty 1-dimensional array filled with 0
+ */
+unsigned char *uc_arrayNew_1d(int _size)
 {
+    return (unsigned char *)calloc(_size, sizeof(unsigned char));
+}
+
+unsigned char* image_mask(unsigned char *foreground, int width, int height, int channel)
+{
+    unsigned char *temp_array = uc_arrayNew_1d(width * height * channel);
     int i,j,k;
     for (i = 0; i < height; i++)
     {
         for (j = 0; j < width; j++)
         {
-            if (foreground[(i * width + j) * channel] >= 50 && foreground[(i * width + j) * channel + 1] >= 200 &&
-                foreground[(i * width + j) * channel + 2] >= 5 && foreground[(i * width + j) * channel + 1]*1.5 > foreground[(i * width + j) * channel] + foreground[(i * width + j) * channel + 2])
+            if (foreground[(i * width + j) * channel + 1]*1.5 > foreground[(i * width + j) * channel] + foreground[(i * width + j) * channel + 2])
             {
                 for (k = 0; k < channel; k++)
                 {
-                    foreground[(i * width + j) * channel + k] = 0;
+                    temp_array[(i * width + j) * channel + k] = 0;
+                }
+            }
+            else
+            {
+                for (k = 0; k < channel; k++)
+                {
+                    temp_array[(i * width + j) * channel + k] = foreground[(i * width + j) * channel + k];
                 }
             }
         }
     }
+    return temp_array;
 }
 
-unsigned char image_combination(unsigned char *foreground, unsigned char *weather_forecast, int width, int height, int channel)
+unsigned char* image_combination(unsigned char *foreground, unsigned char *weather_forecast, int width, int height, int channel)
 {
+    unsigned char *temp_array = uc_arrayNew_1d(width * height * channel);
     int i,j,k;
     for (i = 0; i < height; i++)
     {
@@ -38,10 +57,13 @@ unsigned char image_combination(unsigned char *foreground, unsigned char *weathe
             for (k = 0; k < channel; k++)
             {
                 if(foreground[(i * width + j) * channel + k] == 0)
-                    foreground[(i * width + j) * channel + k] = weather_forecast[(i * width + j) * channel + k];
+                    temp_array[(i * width + j) * channel + k] = weather_forecast[(i * width + j) * channel + k];
+                else
+                    temp_array[(i * width + j) * channel + k] = foreground[(i * width + j) * channel + k];
             }
         }
     }
+    return temp_array;
 }
 
 int main()
@@ -78,12 +100,18 @@ int main()
 
     /* ~ ~ ~ Process ~ ~ ~ */
     
-    image_mask(foreground, width, height, channel);
-    image_combination(foreground, weather_forecast, width, height, channel);
+    unsigned char* masked_image = image_mask(foreground, width, height, channel);
+    unsigned char* result = image_combination(masked_image, weather_forecast, width, height, channel);
 
     // Save image
-    stbi_write_png(save_path, width, height, channel, foreground, width * channel);
-    printf("New image saved to %s\n", save_path);
+    stbi_write_png(save_path, width, height, channel, result, width * channel);
+    printf("Result image saved to %s\n", save_path);
+
+    stbi_image_free(foreground);
+    stbi_image_free(background);
+    stbi_image_free(weather_forecast);
+    stbi_image_free(masked_image);
+    stbi_image_free(result);
 
     return 0;
 }
