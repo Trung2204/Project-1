@@ -1,5 +1,4 @@
 #include<stdio.h>
-#include<math.h>
 #include<stdlib.h>
 
 //Read images library
@@ -46,7 +45,7 @@ unsigned char* image_mask(unsigned char *foreground, int width, int height, int 
     return temp_array;
 }
 
-unsigned char* image_combination(unsigned char *foreground, unsigned char *weather_forecast, int width, int height, int channel)
+unsigned char* image_combination(unsigned char *masked_image, unsigned char *weather_forecast, int width, int height, int channel)
 {
     unsigned char *temp_array = uc_arrayNew_1d(width * height * channel);
     int i,j,k;
@@ -56,10 +55,10 @@ unsigned char* image_combination(unsigned char *foreground, unsigned char *weath
         {
             for (k = 0; k < channel; k++)
             {
-                if(foreground[(i * width + j) * channel + k] == 0)
+                if(masked_image[(i * width + j) * channel + k] == 0)
                     temp_array[(i * width + j) * channel + k] = weather_forecast[(i * width + j) * channel + k];
                 else
-                    temp_array[(i * width + j) * channel + k] = foreground[(i * width + j) * channel + k];
+                    temp_array[(i * width + j) * channel + k] = masked_image[(i * width + j) * channel + k];
             }
         }
     }
@@ -71,7 +70,6 @@ int main()
     // Declare variable
     int width, height, channel;
     char path_foreground [] = "./images/foreground.jpg";
-    char path_background [] = "./images/background.jpg";
     char path_weather_forecast [] = "./images/weather_forecast.jpg";
     char save_path [] = "./images/Result.jpg";
 
@@ -83,13 +81,7 @@ int main()
         exit(1);
     }
     printf("Foreground image:\nWidth = %d\nHeight = %d\nChannel = %d\n", width, height, channel);
-    unsigned char * background = stbi_load (path_background, &width, &height, &channel, 0);
-    if (background == NULL )
-    {
-        printf("\nError in loading the background image.\n");
-        exit(1);
-    }
-    printf("\nBackground image:\nWidth = %d\nHeight = %d\nChannel = %d\n", width, height, channel);
+
     unsigned char * weather_forecast = stbi_load (path_weather_forecast, &width, &height, &channel, 0);
     if (weather_forecast == NULL )
     {
@@ -99,17 +91,16 @@ int main()
     printf("\nWeather forecast image:\nWidth = %d\nHeight = %d\nChannel = %d\n", width, height, channel);
 
     /* ~ ~ ~ Process ~ ~ ~ */
-    
+    // Mask foreground image
     unsigned char* masked_image = image_mask(foreground, width, height, channel);
+    // Combine masked image with background
     unsigned char* result = image_combination(masked_image, weather_forecast, width, height, channel);
 
     // Save image
     stbi_write_jpg(save_path, width, height, channel, result, width * channel);
     printf("Result image saved to %s\n", save_path);
 
-    stbi_image_free(foreground);
-    stbi_image_free(background);
-    stbi_image_free(weather_forecast);
+    // Free allocated memory
     stbi_image_free(masked_image);
     stbi_image_free(result);
 
